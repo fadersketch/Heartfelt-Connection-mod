@@ -6,6 +6,7 @@ import com.heartfelt.connection.prompt.PromptTexts;
 import com.heartfelt.connection.relationship.RelationshipExemption;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
@@ -25,6 +26,17 @@ import java.util.UUID;
  * 同模式,注册于 HeartfeltExtension)。
  */
 public final class ChildActionReportManager {
+
+    /** 审计 H-M3：女仆卸载/移除时清理任务模式与受伤关心表 */
+    @SubscribeEvent
+    public void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        java.util.UUID id = maid.m_20148_();
+        LAST_ACTION_MODE.remove(id);
+        HURT_WATCH_AT.remove(id);
+    }
 
     /** maidmarriage 学习/探险任务模式 key(完成/取消时清除) */
     private static final String ACTION_MODE = "maidmarriage_child_action_mode";

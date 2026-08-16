@@ -55,8 +55,16 @@ public final class ReflectUtil {
         }
         try {
             m = owner.getMethod(name, params);
-            METHOD_CACHE.putIfAbsent(key, m);
         } catch (ReflectiveOperationException ignored) {
+            // 审计：私有/非 public 方法走 getDeclaredMethod 并放开访问（releaseCarry 等场景）
+            try {
+                m = owner.getDeclaredMethod(name, params);
+                m.setAccessible(true);
+            } catch (ReflectiveOperationException ignored2) {
+            }
+        }
+        if (m != null) {
+            METHOD_CACHE.putIfAbsent(key, m);
         }
         return m;
     }
@@ -74,7 +82,7 @@ public final class ReflectUtil {
         }
         try {
             return m.invoke(null, args);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (Exception ignored) {
             return null;
         }
     }
@@ -86,7 +94,7 @@ public final class ReflectUtil {
         }
         try {
             return m.invoke(target, args);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (Exception ignored) {
             return null;
         }
     }

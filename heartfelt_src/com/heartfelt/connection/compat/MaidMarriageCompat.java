@@ -484,7 +484,9 @@ public final class MaidMarriageCompat {
             LINEAGE_KEY = TaskDataRegister.getValue(new ResourceLocation(MM_ID, "child_lineage_data"));
             PREGNANCY_KEY = TaskDataRegister.getValue(new ResourceLocation(MM_ID, "pregnancy_data"));
             MOOD_KEY = TaskDataRegister.getValue(new ResourceLocation(MM_ID, "mood_data"));
-            keysResolved = true;
+            // 审计 M6：只在全部 key 成功解析后才缓存，防止时序性 null 被永久缓存
+            keysResolved = MARRIAGE_KEY != null && PROGRESS_KEY != null && CHILD_KEY != null
+                    && LINEAGE_KEY != null && PREGNANCY_KEY != null && MOOD_KEY != null;
         }
         return switch (keyName) {
             case "marriage_data" -> MARRIAGE_KEY;

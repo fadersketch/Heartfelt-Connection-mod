@@ -282,6 +282,12 @@ public final class HeartfeltNetwork {
                 for (EntityMaid maid : player.m_9236_().m_45976_(
                         EntityMaid.class, player.m_20191_().m_82400_(64.0))) {
                     if (maid.m_20148_().equals(packet.maidUuid)) {
+                        // 审计 H-4：拒绝告白必须先验证归属，防止任意玩家封杀他人女仆
+                        if (!maid.m_21830_(player) && !player.m_20310_(2)) {
+                            player.m_213846_(Component.m_237113_(
+                                    "\u00a7c只能处理与自己的女仆相关的告白。"));
+                            break;
+                        }
                         MaidConfessionManager.handleConfessionRejected(player, maid);
                         break;
                     }
@@ -425,7 +431,7 @@ public final class HeartfeltNetwork {
                 }
                 // v1.5.7:close = 关闭调整器界面,恢复选择性静止(不依赖找到女仆)
                 if ("close".equals(packet.action)) {
-                    com.heartfelt.connection.dialogue.DialogueFreezeManager.stopFreeze(player);
+                    com.heartfelt.connection.dialogue.DialogueFreezeManager.stopFreeze(player, "adjuster");
                     return;
                 }
                 for (EntityMaid maid : player.m_9236_().m_45976_(
@@ -489,17 +495,23 @@ public final class HeartfeltNetwork {
                     return;
                 }
                 if (packet.freeze) {
-                    // 打开:冻结(非玩家、非目标女仆的生物静止)
+                    // 打开:冻结(非玩家、非目标女仆的生物静止；仅自己的女仆/OP)
                     for (EntityMaid maid : player.m_9236_().m_45976_(
                             EntityMaid.class, player.m_20191_().m_82400_(64.0))) {
                         if (maid.m_20148_().equals(packet.maidUuid)) {
+                            // 审计 H-1：只允许操作自己的女仆（或 OP），避免任意玩家全维冻结
+                            if (!maid.m_21830_(player) && !player.m_20310_(2)) {
+                                player.m_213846_(Component.m_237113_(
+                                        "\u00a7c只能对自己的女仆开启对话静止。"));
+                                break;
+                            }
                             com.heartfelt.connection.dialogue.DialogueFreezeManager.startFreeze(player, maid);
                             break;
                         }
                     }
                 } else {
                     // 关闭:恢复
-                    com.heartfelt.connection.dialogue.DialogueFreezeManager.stopFreeze(player);
+                    com.heartfelt.connection.dialogue.DialogueFreezeManager.stopFreeze(player, "chat");
                 }
             });
             ctx.get().setPacketHandled(true);

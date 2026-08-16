@@ -3,6 +3,7 @@ package com.heartfelt.connection.relationship;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.heartfelt.connection.config.HeartfeltConfig;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +26,14 @@ public final class FreezeConversion {
     private static final Map<UUID, long[]> DAILY_DEDUCT = new ConcurrentHashMap<>();
 
     private FreezeConversion() {
+    }
+
+    /** 审计 H-M5：女仆卸载/移除时清理日扣减表 */
+    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        DAILY_DEDUCT.remove(maid.m_20148_());
     }
 
     /** 变化来源是否为主人本人 */

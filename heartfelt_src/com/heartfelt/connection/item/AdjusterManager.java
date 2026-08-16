@@ -56,7 +56,7 @@ public final class AdjusterManager {
         List<String> lines = new ArrayList<>();
         lines.add(statusLine(maid, player));
         lines.add(statusLine2(maid, player));
-        com.heartfelt.connection.dialogue.DialogueFreezeManager.startFreeze(player, maid);
+        com.heartfelt.connection.dialogue.DialogueFreezeManager.startFreeze(player, maid, "adjuster");
         HeartfeltNetwork.channel().send(PacketDistributor.PLAYER.with(() -> player),
                 new HeartfeltNetwork.OpenAdjusterPacket(
                         maid.m_20148_(), maid.m_7755_().getString(), lines, result));
@@ -68,6 +68,14 @@ public final class AdjusterManager {
      */
     public static String applyAction(ServerPlayer player, EntityMaid maid, String action) {
         UUID playerId = player.m_20148_();
+        // 审计 H-2：时间快进会全局篡改服务器时钟，仅限 OP
+        if (action != null && action.startsWith("time+") && !player.m_20310_(2)) {
+            return "时间操作仅限 OP 使用";
+        }
+        // 审计 H-3：调整器所有动作必须先验证目标归属，防止对他人女仆解主/抢婚/传送
+        if (!maid.m_21830_(player) && !player.m_20310_(2)) {
+            return "只能操作自己的女仆（或 OP）";
+        }
         String result;
         switch (action) {
             // ---- 好感 ----

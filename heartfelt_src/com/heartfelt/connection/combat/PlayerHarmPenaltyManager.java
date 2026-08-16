@@ -38,10 +38,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlayerHarmPenaltyManager {
     /** 伤害判定窗口(tick,30 秒) */
     private static final long HARM_WINDOW_TICKS = 600L;
-    /** maid UUID -> 窗口内累积伤害次数(类为服务器生命周期单例,静态与实例等价;静态便于卸载清理) */
-    private static final Map<UUID, Integer> harmHits = new ConcurrentHashMap<>();
-    /** maid UUID -> 最近一次伤害的游戏 tick(窗口刷新) */
-    private static final Map<UUID, Long> harmLastTick = new ConcurrentHashMap<>();
+    /** (maid UUID|player UUID) -> 窗口内累积伤害次数(审计 H-8：按女仆+玩家分桶，避免多人互推责任) */
+    private static final Map<String, Integer> harmHits = new ConcurrentHashMap<>();
+    /** (maid UUID|player UUID) -> 最近一次伤害的游戏 tick(窗口刷新) */
+    private static final Map<String, Long> harmLastTick = new ConcurrentHashMap<>();
     /** v1.5.9:玩家攻击记录(识别 callresponse 中性源重放)——maid UUID -> player UUID */
     private static final Map<UUID, UUID> LAST_PLAYER_ATTACK = new ConcurrentHashMap<>();
     /** v1.5.9:记录时刻 —— maid UUID -> gameTick */
@@ -61,8 +61,9 @@ public final class PlayerHarmPenaltyManager {
 
     /** 清理某女仆的全部记录（实体卸载时调用） */
     public static void forgetMaid(UUID maidUuid) {
-        harmHits.remove(maidUuid);
-        harmLastTick.remove(maidUuid);
+        String prefix = maidUuid.toString() + "|";
+        harmHits.keySet().removeIf(k -> k.startsWith(prefix));
+        harmLastTick.keySet().removeIf(k -> k.startsWith(prefix));
         LAST_PLAYER_ATTACK.remove(maidUuid);
         LAST_ATTACK_TICK.remove(maidUuid);
         LAST_TODDLER_HIT.remove(maidUuid);
@@ -151,19 +152,20 @@ public final class PlayerHarmPenaltyManager {
             return;
         }
         UUID maidUuid = maid.m_20148_();
+        String bucket = maidUuid.toString() + "|" + player.m_20148_();
         long now = maid.m_9236_().m_46467_();
-        // 窗口刷新:距上次伤害超过窗口 → 重新计数
-        Long last = this.harmLastTick.get(maidUuid);
+        // 窗口刷新:距上次伤害超过窗口 → 重新计数(按 女仆+玩家 分桶)
+        Long last = this.harmLastTick.get(bucket);
         int hits = (last != null && now - last < HARM_WINDOW_TICKS)
-                ? this.harmHits.getOrDefault(maidUuid, 0) + 1 : 1;
-        this.harmHits.put(maidUuid, hits);
-        this.harmLastTick.put(maidUuid, now);
+                ? this.harmHits.getOrDefault(bucket, 0) + 1 : 1;
+        this.harmHits.put(bucket, hits);
+        this.harmLastTick.put(bucket, now);
         if (hits < HeartfeltConfig.HARM_TRIGGER_HITS.get()) {
             return;
         }
-        // 确认故意:触发惩罚,并清计数(避免同窗口连触发)
-        this.harmHits.remove(maidUuid);
-        this.harmLastTick.remove(maidUuid);
+        // 确认故意:触发惩罚,并清该玩家计数(避免同窗口连触发;不影响其他玩家独立计数)
+        this.harmHits.remove(bucket);
+        this.harmLastTick.remove(bucket);
         this.applyPenalty(maid, player, now);
     }
 

@@ -209,7 +209,7 @@ public class FamilyInteractionManager {
             // 与站起保险,不再发消息/气泡。
             if (stage == MaidMarriageCompat.ChildStage.JUVENILE) {
                 daughter.m_21837_(false); // 保险:确保站起(可靠检测处也会站)
-                return;
+                continue; // 审计 H-7：不能提前退出整个循环，否则同列表后续女儿成长检查被跳过
             }
             player.m_213846_(Component.m_237113_(
                     PromptTexts.growthMessage(daughter.m_7755_().getString(), stage)));

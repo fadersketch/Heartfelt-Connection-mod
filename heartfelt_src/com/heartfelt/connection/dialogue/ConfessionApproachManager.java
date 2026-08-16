@@ -18,6 +18,8 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
@@ -52,6 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ConfessionApproachManager {
     /** 前摇会话:maid UUID -> (目标玩家 UUID, 开始 tick) */
     private static final Map<UUID, Session> APPROACHING = new ConcurrentHashMap<>();
+    /** 审计 H-9：女仆卸载时暂存原任务 UID，重载后恢复（实体 UUID 未变时可用） */
+    private static final Map<UUID, String> PENDING_TASK_RESTORE = new ConcurrentHashMap<>();
     /** WALK_TARGET 刷新间隔(tick,1 秒) */
     private static final int REFRESH_INTERVAL = 20;
     /** 补记检测间隔(tick,2 秒) */
@@ -70,6 +74,7 @@ public final class ConfessionApproachManager {
             return;
         }
         Session s = APPROACHING.remove(maidId);
+        PENDING_TASK_RESTORE.remove(maidId);
         if (s != null) {
             // 实体已不在世界,任务恢复无从谈起——仅清理会话即可
         }
@@ -118,6 +123,12 @@ public final class ConfessionApproachManager {
         // 4. 走向玩家
         walkTo(maid, player);
         APPROACHING.put(maidId, new Session(player.m_20148_(), now, prevTask));
+        if (prevTask != null) {
+            try {
+                PENDING_TASK_RESTORE.put(maidId, prevTask.getUid().toString());
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     /** 设置/刷新 WALK_TARGET 到玩家位置(Brain 寻路,速度/容忍 2 格) */
@@ -132,6 +143,40 @@ public final class ConfessionApproachManager {
     }
 
     // ==================== 会话维护 ====================
+
+    /** 审计：女仆卸载/移除时清理前摇会话与待恢复任务 */
+    @SubscribeEvent
+    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        UUID id = maid.m_20148_();
+        APPROACHING.remove(id);
+        // 注意：PENDING_TASK_RESTORE 不在这里清除，卸载重载后仍可恢复原任务；
+        // 魂符/实体重建由 purgeMaid 清除。
+    }
+
+    /** 审计 H-9：女仆重新加入世界时恢复卸载期间暂停的原任务 */
+    @SubscribeEvent
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!(event.getEntity() instanceof EntityMaid maid) || event.getLevel().m_5776_()) {
+            return;
+        }
+        UUID id = maid.m_20148_();
+        String uid = PENDING_TASK_RESTORE.remove(id);
+        if (uid == null) {
+            return;
+        }
+        try {
+            net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.parse(uid);
+            java.util.Optional<com.github.tartaricacid.touhoulittlemaid.api.task.IMaidTask> task =
+                    com.github.tartaricacid.touhoulittlemaid.entity.task.TaskManager.findTask(rl);
+            if (task.isPresent()) {
+                maid.setTask(task.get());
+            }
+        } catch (Exception ignored) {
+        }
+    }
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -212,7 +257,7 @@ public final class ConfessionApproachManager {
                     }
                 } catch (Exception ignored) {
                 }
-                DialogueFreezeManager.startFreeze(player, maid);
+                DialogueFreezeManager.startFreeze(player, maid, "confession");
                 // v1.5.112:先发 S2C 让客户端记住断点(remember confession_intro),
                 // 同一服务端 tick 直调 maidmarriage handleInteractionToggle 开启
                 // 互动(替代原客户端 sendHugMaid 往返——canSendToServer/反射/C2S
@@ -234,6 +279,8 @@ public final class ConfessionApproachManager {
                             new HeartfeltNetwork.OpenMaidMarriageConfessionPacket(null));
                     player.m_213846_(Component.m_237113_(
                             PromptTexts.confessionApproachOpenFailed(maid.m_7755_().getString())));
+                    // 审计 H-10：互动开启失败必须解除冻结，否则客户端无界面时会被冻满 5 分钟
+                    DialogueFreezeManager.stopFreeze(player, "confession");
                 }
                 continue;
             }
@@ -253,6 +300,7 @@ public final class ConfessionApproachManager {
                 maid.setTask(s.prevTask());
             } catch (Exception ignored) {
             }
+            PENDING_TASK_RESTORE.remove(maidId);
         }
     }
 

@@ -44,9 +44,13 @@ public final class DialogueFreezeManager {
     private static final long FREEZE_TIMEOUT = 300 * 20L;
     /** 补冻/超时检查间隔(tick,2 秒) */
     private static final int SCAN_INTERVAL = 40;
+    /** 审计 H-1：冻结范围限制在玩家附近，禁止全维冻结 */
+    private static final double FREEZE_RADIUS = 32.0;
 
     /** 冻结会话:player UUID -> 会话(维度 + 目标女仆 + 冻结实体 UUID + 最后活动 tick) */
     private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
+    /** 审计 H-11：同一玩家的活跃冻结来源（chat/adjuster/confession），避免关闭一个界面误解冻另一个 */
+    private static final Map<UUID, Set<String>> ACTIVE_SOURCES = new ConcurrentHashMap<>();
 
     private DialogueFreezeManager() {
     }
@@ -71,11 +75,17 @@ public final class DialogueFreezeManager {
      * (避免每次刷新都闪一下恢复)。只冻结非玩家、非目标女仆的 Mob。
      */
     public static void startFreeze(ServerPlayer player, EntityMaid targetMaid) {
+        startFreeze(player, targetMaid, "chat");
+    }
+
+    /** 带来源标识的冻结入口（审计 H-11：chat/adjuster/confession 互不误关） */
+    public static void startFreeze(ServerPlayer player, EntityMaid targetMaid, String source) {
         if (player == null || !(player.m_9236_() instanceof ServerLevel level)) {
             return;
         }
         UUID playerId = player.m_20148_();
         UUID targetId = targetMaid == null ? null : targetMaid.m_20148_();
+        ACTIVE_SOURCES.computeIfAbsent(playerId, k -> ConcurrentHashMap.newKeySet()).add(source);
         Session existing = SESSIONS.get(playerId);
         if (existing != null) {
             existing.lastActive = level.m_46467_();
@@ -94,17 +104,16 @@ public final class DialogueFreezeManager {
         }
         Session session = new Session(level, level.m_46467_());
         session.targetMaidId = targetId;
-        for (Entity e : level.m_8583_()) {
-            if (e instanceof Player) {
+        net.minecraft.world.phys.AABB area = player.m_20191_().m_82400_(FREEZE_RADIUS);
+        for (Mob mob : level.m_45976_(Mob.class, area)) {
+            if (mob instanceof Player) {
                 continue; // 玩家可移动
             }
-            if (targetId != null && e.m_20148_().equals(targetId)) {
+            if (targetId != null && mob.m_20148_().equals(targetId)) {
                 continue; // 目标女仆(正在对话的那个)可移动
             }
-            if (e instanceof Mob mob) {
-                mob.m_21553_(true); // setNoAi:生物静止(其他女仆同样冻结)
-                session.frozen.add(e.m_20148_());
-            }
+            mob.m_21553_(true); // setNoAi:生物静止(其他女仆同样冻结)
+            session.frozen.add(mob.m_20148_());
         }
         SESSIONS.put(playerId, session);
     }
@@ -116,7 +125,24 @@ public final class DialogueFreezeManager {
         }
     }
 
+    /** 关闭指定来源（审计 H-11）：仅当该玩家没有其他活跃冻结来源时才真正解冻 */
+    public static void stopFreeze(ServerPlayer player, String source) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.m_20148_();
+        Set<String> sources = ACTIVE_SOURCES.get(playerId);
+        if (sources != null) {
+            sources.remove(source);
+            if (sources.isEmpty()) {
+                ACTIVE_SOURCES.remove(playerId);
+                stopFreeze(playerId);
+            }
+        }
+    }
+
     public static void stopFreeze(UUID playerId) {
+        ACTIVE_SOURCES.remove(playerId);
         Session session = SESSIONS.remove(playerId);
         if (session == null) {
             return;
@@ -152,16 +178,22 @@ public final class DialogueFreezeManager {
                 continue;
             }
             // 补冻:会话期间新出现的 Mob(同样跳过玩家与目标女仆)
-            for (Entity e : session.level.m_8583_()) {
-                if (e instanceof Player) {
+            ServerPlayer sp = session.level.m_8791_(entry.getKey()) instanceof ServerPlayer ?
+                    (ServerPlayer) session.level.m_8791_(entry.getKey()) : null;
+            if (sp == null) {
+                continue;
+            }
+            net.minecraft.world.phys.AABB area = sp.m_20191_().m_82400_(FREEZE_RADIUS);
+            for (Mob mob : session.level.m_45976_(Mob.class, area)) {
+                if (mob instanceof Player) {
                     continue;
                 }
-                if (session.targetMaidId != null && e.m_20148_().equals(session.targetMaidId)) {
+                if (session.targetMaidId != null && mob.m_20148_().equals(session.targetMaidId)) {
                     continue;
                 }
-                if (e instanceof Mob mob && !session.frozen.contains(e.m_20148_())) {
+                if (!session.frozen.contains(mob.m_20148_())) {
                     mob.m_21553_(true);
-                    session.frozen.add(e.m_20148_());
+                    session.frozen.add(mob.m_20148_());
                 }
             }
         }

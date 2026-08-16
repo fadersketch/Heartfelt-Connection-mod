@@ -6,6 +6,7 @@ import com.heartfelt.connection.relationship.RelationshipExemption;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.entity.EntityMountEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -34,6 +35,15 @@ public final class PickupResponseManager {
     /** 每女仆冷却(游戏刻);10 秒 */
     private static final long COOLDOWN_TICKS = 200L;
     private static final Map<UUID, Long> PICKUP_COOLDOWN_UNTIL = new ConcurrentHashMap<>();
+
+    /** 审计 H-M4：女仆卸载/移除时清理拾取回应冷却 */
+    @SubscribeEvent
+    public void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        purgeMaid(maid.m_20148_());
+    }
 
     /** v1.5.96:女仆实体重建(收魂符/跨维度)时清理——旧 UUID 条目残留无意义 */
     public static void purgeMaid(UUID maidId) {

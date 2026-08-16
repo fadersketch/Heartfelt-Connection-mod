@@ -57,6 +57,9 @@ public class HeartfeltExtension implements ILittleMaid {
 MinecraftForge.EVENT_BUS.register(new com.heartfelt.connection.compat.ChildActionReportManager());
         // v1.4.1:玩家伤害惩罚(冻结层女仆:关系不破坏但有后果;误伤豁免)
         MinecraftForge.EVENT_BUS.register(new com.heartfelt.connection.combat.PlayerHarmPenaltyManager());
+        // 审计 H-M5：FreezeConversion 是静态工具类，单独注册实体离开清理
+        MinecraftForge.EVENT_BUS.addListener(
+                com.heartfelt.connection.relationship.FreezeConversion::onEntityLeaveLevel);
     }
 
     @Override

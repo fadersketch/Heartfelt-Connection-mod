@@ -45,9 +45,18 @@ public final class BetrayalRedemptionManager {
     /**
      * 蛋糕(v1.5.1 修复:按注册名取,不依赖 SRG 字段名——原 Items.f_42446_ 实为
      * MILK_BUCKET 奶桶,导致拿蛋糕喂女仆永远无效)。
+     * 审计 H-12：改为惰性解析，避免类加载早于注册表填充导致永久 null。
      */
-    private static final Item CAKE =
-            ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "cake"));
+    private static Item CAKE = null;
+    private static boolean CAKE_RESOLVED = false;
+
+    private static Item cake() {
+        if (!CAKE_RESOLVED) {
+            CAKE = ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "cake"));
+            CAKE_RESOLVED = true;
+        }
+        return CAKE;
+    }
 
     @SubscribeEvent
     public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
@@ -61,7 +70,8 @@ public final class BetrayalRedemptionManager {
             return;
         }
         // 只认蛋糕(TLM 驯服物,与背叛"重新驯服"的语义一致);其他物品不累计防刷
-        if (CAKE == null || !event.getItemStack().m_150930_(CAKE)) {
+        Item cake = cake();
+        if (cake == null || !event.getItemStack().m_150930_(cake)) {
             return;
         }
         onFeed(player, maid);
@@ -99,7 +109,7 @@ public final class BetrayalRedemptionManager {
         int[] emotion = CallResponseCompat.emotionValues(maid, playerId);
         int fear = emotion == null ? FEAR_DONE + 1 : emotion[1];
         int trust = emotion == null ? TRUST_DONE - 1 : emotion[0];
-        if (fear <= FEAR_DONE && trust >= TRUST_DONE) {
+        if ((maxFeeds <= 0 || progress >= maxFeeds) && fear <= FEAR_DONE && trust >= TRUST_DONE) {
             completeRedemption(player, maid);
         } else {
             // 进度反馈:喂食时冒一段"还在抗拒/开始动摇"的气泡

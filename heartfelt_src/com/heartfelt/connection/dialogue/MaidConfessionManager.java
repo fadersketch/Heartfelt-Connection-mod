@@ -34,6 +34,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MaidConfessionManager {
     /** 破裂监视间隔(tick,默认 200=10s,让"跌破线→破裂"及时) */
     private static final int BREAKUP_INTERVAL = 200;
+    /** 审计 H-5：手动触发告白冷却（60 秒） */
+    private static final long FORCE_COOLDOWN_TICKS = 1200L;
+    private static final java.util.Map<java.util.UUID, Long> FORCE_COOLDOWN =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
@@ -191,6 +195,16 @@ public class MaidConfessionManager {
         if (player == null) {
             return null;
         }
+        // 审计 H-5：需要手持调整器或 OP，并加冷却，避免任意玩家反复刷告白前摇
+        if (!(player.m_21205_().m_41720_() == com.heartfelt.connection.item.HeartfeltItems.ADJUSTER.get())
+                && !player.m_20310_(2)) {
+            return "需要手持调整器（或 OP）才能触发告白";
+        }
+        long now = player.m_9236_().m_7654_().m_129921_();
+        Long lastForce = FORCE_COOLDOWN.get(player.m_20148_());
+        if (lastForce != null && now - lastForce < FORCE_COOLDOWN_TICKS) {
+            return "手动触发告白冷却中，请稍后再试";
+        }
         if (hasDeclaredPartner(player)) {
             return "已有确认关系(妻子/恋人),其他女仆不会告白。";
         }
@@ -214,6 +228,7 @@ public class MaidConfessionManager {
         // 立即启动前摇(不经概率/冷却;到达判定由 ConfessionApproachManager 负责)
         best.getPersistentData().m_128356_(HeartfeltTags.LAST_CONFESSION_TICK,
                 best.m_9236_().m_46467_());
+        FORCE_COOLDOWN.put(player.m_20148_(), now);
         ConfessionApproachManager.startApproach(player, best);
         return "已触发 " + best.m_7755_().getString()
                 + "(好感 " + bestFavor + ") 的告白前摇——她会走向你。";

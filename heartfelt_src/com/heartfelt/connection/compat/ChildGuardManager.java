@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
@@ -31,6 +32,17 @@ import java.util.UUID;
  * 事件类在 TLM API(original_tlm.jar 在 classpath),直接强类型监听。
  */
 public final class ChildGuardManager {
+
+    /** 审计 H-M2：女仆卸载/移除时清理冷却表 */
+    @SubscribeEvent
+    public void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        UUID id = maid.m_20148_();
+        TASK_PULL_MSG_AT.remove(id);
+        HAND_STRIP_MSG_AT.remove(id);
+    }
 
     @SubscribeEvent
     public void onMaidToItem(MaidAndItemTransformEvent.ToItem event) {

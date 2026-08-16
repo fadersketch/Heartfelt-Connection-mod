@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.Map;
@@ -49,6 +50,15 @@ public final class LongingEffectManager {
     private static final int HEART_COUNT = 8;
 
     private final Map<UUID, Long> bubbleUntil = new ConcurrentHashMap<>();
+
+    /** 审计 H-M1：女仆卸载/移除时清理思慕气泡冷却表 */
+    @SubscribeEvent
+    public void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().m_5776_() || !(event.getEntity() instanceof EntityMaid maid)) {
+            return;
+        }
+        this.bubbleUntil.remove(maid.m_20148_());
+    }
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
