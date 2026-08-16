@@ -1,0 +1,20 @@
+# ---- build outputs ----
+out_heartfelt/
+staging_heartfelt/
+patched/
+*.class
+
+# ---- machine-specific compile args (local paths) ----
+compile_heartfelt.txt
+compile_addon.txt
+
+# ---- Python ----
+__pycache__/
+*.pyc
+
+# ---- system / IDE ----
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.iml
