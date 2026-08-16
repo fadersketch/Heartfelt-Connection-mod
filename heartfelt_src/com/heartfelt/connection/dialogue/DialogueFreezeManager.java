@@ -106,9 +106,6 @@ public final class DialogueFreezeManager {
         session.targetMaidId = targetId;
         net.minecraft.world.phys.AABB area = player.m_20191_().m_82400_(FREEZE_RADIUS);
         for (Mob mob : level.m_45976_(Mob.class, area)) {
-            if (mob instanceof Player) {
-                continue; // 玩家可移动
-            }
             if (targetId != null && mob.m_20148_().equals(targetId)) {
                 continue; // 目标女仆(正在对话的那个)可移动
             }
@@ -185,9 +182,6 @@ public final class DialogueFreezeManager {
             }
             net.minecraft.world.phys.AABB area = sp.m_20191_().m_82400_(FREEZE_RADIUS);
             for (Mob mob : session.level.m_45976_(Mob.class, area)) {
-                if (mob instanceof Player) {
-                    continue;
-                }
                 if (session.targetMaidId != null && mob.m_20148_().equals(session.targetMaidId)) {
                     continue;
                 }
