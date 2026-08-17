@@ -28,6 +28,16 @@
 - Minecraft **1.20.1** + Forge **47.4.21**(即 1.20.1-Forge_47.4.21)
 - 仅 Forge 加载器;服务端/客户端均为 both(单人、局域网、服务器均可)
 
+## 测试版本声明
+
+本版本经测试者验证,在以下**前置模组的具体版本**下可以正常运行;其他版本(含更新/更旧的 maidmarriage 与 callresponse)**未必兼容**,请以实际测试为准:
+
+| 前置模组 | 测试通过的具体版本(文件全名) |
+|---|---|
+| maidmarriage(心契誓约) | `[车万女仆：心契誓约] maidmarriage-2.3.0-forge+mc1.20.1.jar`(2.3.0) |
+| callresponse(爱憎分明) | `Touhou Little Maid-Love  Loathe-1.20.1-forge-2.0.4.jar`(2.0.4) |
+| Touhou Little Maid(车万女仆) | `[车万女仆] touhoulittlemaid-1.5.3-forge+mc1.20.1.jar`(1.5.3) |
+
 ## 功能特性
 
 ### 关系联动
