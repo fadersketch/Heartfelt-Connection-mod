@@ -157,11 +157,11 @@ public final class HeartfeltConfig {
                 .comment("女仆主动告白的尝试窗口间隔(tick,默认 2400=2min)")
                 .defineInRange("attemptInterval", 2400, 400, 24000);
         CONFESSION_BASE_CHANCE = builder
-                .comment("好感=CONFESSION_REQUIRED_FAVOR 时的基础尝试概率(0.0~1.0;v1.5.17 0.15→0.20 适度放宽)")
-                .defineInRange("baseChance", 0.20, 0.0, 1.0);
+                .comment("好感=CONFESSION_REQUIRED_FAVOR 时的基础尝试概率(0.0~1.0;v1.5.387 0.20→0.35 大幅提高——用户要求高好感下更主动)")
+                .defineInRange("baseChance", 0.35, 0.0, 1.0);
         CONFESSION_FAVOR_BONUS = builder
-                .comment("好感 192→384 的线性概率加成(满好感时 = base+bonus)")
-                .defineInRange("favorBonus", 0.45, 0.0, 1.0);
+                .comment("好感 192→384 的线性概率加成(满好感时 = base+bonus;v1.5.387 0.45→0.60——满好感每次窗口 ≈0.95 必触发)")
+                .defineInRange("favorBonus", 0.60, 0.0, 1.0);
         CONFESSION_THREAT_RADIUS = builder
                 .comment("尝试前威胁检查半径(格;v1.5.17 48→24——旧版半径过大,正常世界几乎总有怪,导致很难触发):半径内无敌对生物且女仆不在战斗中才发起")
                 .defineInRange("threatRadius", 24, 8, 128);

@@ -1,4 +1,4 @@
-# Build heartfelt_connection-1.5.116.jar from compiled classes + resources
+# Build heartfelt_connection-1.0.0.jar from compiled classes + resources
 # Usage: run fix_classpath.py + gen_compile.py + compile_heartfelt.bat first.
 import os, shutil, zipfile, json, re, pathlib
 
@@ -6,7 +6,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 STAGING = os.path.join(BASE, 'staging_heartfelt')
 OUT = os.path.join(BASE, 'out_heartfelt')
 SRC = os.path.join(BASE, 'heartfelt_src')
-VERSION = '1.5.116'
+VERSION = '1.0.0'
 JAR_OUT = os.path.join(BASE, 'patched', 'heartfelt_connection-%s.jar' % VERSION)
 
 MIXIN_CONFIGS = ['mixins.heartfelt.json', 'mixins.heartfelt.opt.json']

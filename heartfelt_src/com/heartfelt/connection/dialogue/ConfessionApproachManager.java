@@ -56,8 +56,9 @@ public final class ConfessionApproachManager {
     private static final Map<UUID, Session> APPROACHING = new ConcurrentHashMap<>();
     /** 审计 H-9：女仆卸载时暂存原任务 UID，重载后恢复（实体 UUID 未变时可用） */
     private static final Map<UUID, String> PENDING_TASK_RESTORE = new ConcurrentHashMap<>();
-    /** WALK_TARGET 刷新间隔(tick,1 秒) */
-    private static final int REFRESH_INTERVAL = 20;
+    /** WALK_TARGET 刷新间隔(tick,v1.5.386:从 20 改为 2——直连导航需
+     *  持续刷新跟上移动的玩家,20 tick 太慢玩家走开就追不上) */
+    private static final int REFRESH_INTERVAL = 2;
     /** 补记检测间隔(tick,2 秒) */
     private static final int BACKFILL_INTERVAL = 40;
 
@@ -95,7 +96,13 @@ public final class ConfessionApproachManager {
             // 清掉旧会话再启动,按钮永远可重试。
             endSession(maidId, maid);
         }
-        long now = maid.m_9236_().m_46467_();
+        // v1.5.386:改用【服务器 tick 计数】——旧版存的是 gameTime(m_46467_,随存档
+        // 持久累积),而 tickApproaching 比较用的 tick 是 server.m_129921_()(每次启动
+        // 从 0 重计)。老存档 gameTime 巨大 → tick - startTick 恒为大负数 →
+        // "最短前摇 50 tick"与"超时 1200 tick"两个判定永远不成立 → 到达分支永不触发
+        // (女仆走到身边也只是站着,界面不弹、超时消息也不出;新世界两钟近似同步,
+        // 所以开发期测试正常)。统一与 forceConfession/onServerTick 同源。
+        long now = player.m_9236_().m_7654_().m_129921_();
         // 1. 系统消息(玩家预期,只发一次)
         player.m_213846_(Component.m_237113_(
                 PromptTexts.confessionApproachHint(maid.m_7755_().getString())));
@@ -131,15 +138,21 @@ public final class ConfessionApproachManager {
         }
     }
 
-    /** 设置/刷新 WALK_TARGET 到玩家位置(Brain 寻路,速度/容忍 2 格) */
+    /** v1.5.386:改为【直连导航 + WALK_TARGET 内存双写】——旧版只写 Brain 内存,
+     *  被 TLM idle/站桩行为每 tick 清掉,20 tick 刷新一次抢不过 → 女仆原地不动。
+     *  双写:①WALK_TARGET 内存每 2 tick 重写——MoveToTargetSink 见内存为空会
+     *  navigation.stop(),写内存后它每 tick 持续 moveTo 驱动移动;②直连导航同步
+     *  指向同一目标(与 SelfPreservationBehavior 逃跑同机制),即使 MoveToTargetSink
+     *  未运行也直接寻路。2 tick 刷新 10 次/秒,碾压每 tick 一次的清空。 */
     private static void walkTo(EntityMaid maid, ServerPlayer player) {
         double speed = HeartfeltConfig.CONFESSION_APPROACH_SPEED.get();
         Brain<?> brain = maid.m_6274_();
-        if (brain == null) {
-            return;
+        if (brain != null) {
+            brain.m_21879_(MemoryModuleType.f_26370_,
+                    new WalkTarget(new BlockPosTracker(player.m_20183_()), (float) speed, 2));
         }
-        brain.m_21879_(MemoryModuleType.f_26370_,
-                new WalkTarget(new BlockPosTracker(player.m_20183_()), (float) speed, 2));
+        maid.m_21573_().m_26519_(
+                player.m_20185_(), player.m_20186_(), player.m_20189_(), speed);
     }
 
     // ==================== 会话维护 ====================
