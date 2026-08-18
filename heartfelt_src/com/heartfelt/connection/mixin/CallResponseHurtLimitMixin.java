@@ -21,18 +21,24 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * callresponse 重放的就是限伤后的值。仅对"主人玩家"生效(与 TLM ÷5 一致);
  * 非主人攻击不重放,不受影响。
  *
+ * v1.0.1:target 从 callresponse 的 mixin 类(MixinEntityMaid)改为它的注入目标
+ * EntityMaid——mixin 不能以另一个 mixin 类为 target(InvalidMixinException,
+ * "the target is a mixin")。example$onHurtHead 是 callresponse 注入到
+ * EntityMaid 的 Unique 方法,运行时存在于 EntityMaid 上(先应用前置 mixin);
+ * require=0:callresponse 升级改方法名时静默跳过,不崩服。
+ *
  * @Pseudo + 字符串 target:callresponse 可选依赖(实际是必装,但类不在编译
  * classpath);require=0:callresponse 升级改方法名时静默跳过,不崩服。
  */
 @Pseudo
-@Mixin(targets = "com.github.JumDa5he.callresponse.mixin.MixinEntityMaid")
+@Mixin(targets = "com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid")
 public abstract class CallResponseHurtLimitMixin {
 
     @ModifyVariable(method = "example$onHurtHead", at = @At("HEAD"),
             index = 2, argsOnly = true, require = 0)
     private float heartfelt$limitOwnerDamage(DamageSource source, float amount,
             org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
-        // 目标类(callresponse 的 MixinEntityMaid)注入在 EntityMaid 上,this 必为女仆
+        // 目标类(EntityMaid)由 callresponse 的 MixinEntityMaid 注入过,this 必为女仆
         com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid maid =
                 (com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid) (Object) this;
         net.minecraft.world.entity.Entity direct = source.m_7640_();

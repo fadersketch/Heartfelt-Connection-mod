@@ -21,15 +21,33 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * onPlayerTick 的"妈妈一出现自动抱起"机制【不动】——原版保留。
  *
  * maidmarriage 类不在编译 classpath:@Pseudo + 字符串 targets + optional 配置。
+ *
+ * v1.0.1:method 属性从 "a|b|c" 拆分为三个独立 @Redirect——mixin 0.8.5 的
+ * TargetSelector 不再支持 `|` 分隔的多方法名(整串被当作单个名字查找,
+ * 报 "Invalid name",注入静默失效)。
  */
 @Pseudo
 @Mixin(targets = "com.example.maidmarriage.compat.MaidCarryChildManager")
 public abstract class CarryToggleSittingMixin {
 
-    @Redirect(method = "handleCarryToggle|resolveTargetChild|resolveCarrierAdult",
+    @Redirect(method = "handleCarryToggle",
             at = @At(value = "INVOKE",
                     target = "Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;isMaidInSittingPose()Z"))
-    private static boolean heartfelt$allowCarryWhileSitting(EntityMaid maid) {
-        return false; // 坐下/站起都能触发"让妈妈抱"
+    private static boolean heartfelt$allowCarryWhileSittingToggle(EntityMaid maid) {
+        return false; // 孩子坐下也能触发"让妈妈抱"
+    }
+
+    @Redirect(method = "resolveTargetChild",
+            at = @At(value = "INVOKE",
+                    target = "Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;isMaidInSittingPose()Z"))
+    private static boolean heartfelt$allowCarryWhileSittingResolveChild(EntityMaid maid) {
+        return false; // 孩子坐着也能被找到
+    }
+
+    @Redirect(method = "resolveCarrierAdult",
+            at = @At(value = "INVOKE",
+                    target = "Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;isMaidInSittingPose()Z"))
+    private static boolean heartfelt$allowCarryWhileSittingResolveAdult(EntityMaid maid) {
+        return false; // 妈妈坐着也能被找到
     }
 }
