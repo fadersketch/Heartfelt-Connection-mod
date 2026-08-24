@@ -1,4 +1,4 @@
-# Build heartfelt_connection-1.0.0.jar from compiled classes + resources
+# Build heartfelt_connection-1.0.1.jar from compiled classes + resources
 # Usage: run fix_classpath.py + gen_compile.py + compile_heartfelt.bat first.
 import os, shutil, zipfile, json, re, pathlib
 
@@ -6,7 +6,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 STAGING = os.path.join(BASE, 'staging_heartfelt')
 OUT = os.path.join(BASE, 'out_heartfelt')
 SRC = os.path.join(BASE, 'heartfelt_src')
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 JAR_OUT = os.path.join(BASE, 'patched', 'heartfelt_connection-%s.jar' % VERSION)
 
 MIXIN_CONFIGS = ['mixins.heartfelt.json', 'mixins.heartfelt.opt.json']
@@ -53,6 +53,20 @@ for d in ['assets', 'data']:
     if os.path.isdir(p):
         shutil.copytree(p, os.path.join(STAGING, d))
 
+# 3b. Jar-in-Jar: bundle mixinextras-forge 0.5.4 (official forge wrapper, FMLModType
+#     GAMELIBRARY, nests the common jar). The mixins use @WrapMethod/@WrapOperation;
+#     1.0.0 relied on OTHER mods bundling MixinExtras, so clean mod lists crashed on
+#     startup with ClassMetadataNotFoundException: ...wrapoperation.Operation.
+MX_JAR = os.path.join(BASE, 'lib', 'mixinextras-forge-0.5.4.jar')
+os.makedirs(os.path.join(meta, 'jarjar'), exist_ok=True)
+shutil.copy2(MX_JAR, os.path.join(meta, 'jarjar', 'mixinextras-forge-0.5.4.jar'))
+with open(os.path.join(meta, 'jarjar', 'metadata.json'), 'w', encoding='utf-8') as f:
+    json.dump({'jars': [{
+        'identifier': {'group': 'io.github.llamalad7', 'artifact': 'mixinextras-forge'},
+        'version': {'range': '[0.5.4,)', 'artifactVersion': '0.5.4'},
+        'path': 'META-INF/jarjar/mixinextras-forge-0.5.4.jar',
+    }]}, f, indent=2)
+
 # 4. zip everything (jar)
 if os.path.exists(JAR_OUT):
     os.remove(JAR_OUT)
@@ -68,7 +82,8 @@ with zipfile.ZipFile(JAR_OUT, 'w', zipfile.ZIP_DEFLATED) as z:
 # 5. verify
 with zipfile.ZipFile(JAR_OUT) as z:
     names = z.namelist()
-    required = ['META-INF/mods.toml', 'META-INF/MANIFEST.MF'] + MIXIN_CONFIGS + [
+    required = ['META-INF/mods.toml', 'META-INF/MANIFEST.MF',
+                'META-INF/jarjar/metadata.json', 'META-INF/jarjar/mixinextras-forge-0.5.4.jar'] + MIXIN_CONFIGS + [
         'com/heartfelt/connection/HeartfeltMod.class',
         'com/heartfelt/connection/HeartfeltExtension.class',
         'com/heartfelt/connection/combat/BetrayalRedemptionManager.class',

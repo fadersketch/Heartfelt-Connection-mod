@@ -1,5 +1,18 @@
 ﻿# 更新日志
 
+## v1.0.1(2026-08-24)热修——纯净模组环境启动崩溃
+
+- 问题:1.0.0 的 Mixin 使用 MixinExtras(`@WrapMethod`/`@WrapOperation`)但未把该库打进 jar,
+  依赖环境中其他模组顺带提供;纯净小整合(仅车万女仆+心契誓约+爱憎分明+promaid 等少量模组)
+  无任何模组提供时,启动必报
+  `ClassMetadataNotFoundException: com.llamalad7.mixinextras.injector.wrapoperation.Operation`
+  (MixinTransformerError)崩溃;
+- 修复:以 Jar-in-Jar 内置 mixinextras-forge 0.5.4(官方 Forge 包装,FMLModType GAMELIBRARY),
+  任意模组环境开箱即用,玩家无需额外安装任何库;
+- 其余与 1.0.0 完全一致(基于已发布 jar 增量修补,类与资源逐字节不变);
+- 构建:`build_heartfelt.py` 支持 JiJ 打包与校验;`lib/` 新增 mixinextras-forge-0.5.4.jar;
+  新增 `make_101_hotfix.py` 热修脚本。
+
 ## v1.0.0(2026-08-17)正式发布
 
 Heartfelt-connection(心契誓约 × 爱憎分明)关系联动补丁首个正式版本。
