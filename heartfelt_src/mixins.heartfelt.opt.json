@@ -4,6 +4,21 @@
   "package": "com.heartfelt.connection.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "EmotionFearExemptionMixin",
+    "EmotionTrustExemptionMixin",
+    "EmotionBetrayalIsolationMixin",
+    "EmotionForgettingIsolationMixin",
+    "EmotionDotingIsolationMixin",
+    "EmotionDotingSelectActionMixin",
+    "EmotionDevotedMixin",
+    "EntityMaidDoHurtProtectMixin",
+    "EntityMaidHurtRecordMixin",
+    "MaidWorkManagerSkillRetentionMixin",
+    "MaidSpiritTtsGuardMixin",
+    "MaidAmbientVoiceMixin",
+    "AIChatOpenSafetyMixin",
+    "ChatBubbleNameFilterMixin",
+    "HeartbrokenChatGateMixin",
     "HungerSpeedTierCacheMixin",
     "LoveLoatheActiveQuotaMixin",
     "LoveLoatheWitnessQuotaMixin",
@@ -13,6 +28,14 @@
     "HeartPactVoicePlaybackMixin",
     "ChildGiftTextMixin",
     "CarryToggleSittingMixin"
+  ],
+  "client": [
+    "PlayerConfessionEntryMixin",
+    "HugActionScreenPauseMixin",
+    "AIChatScreenDramatizeMixin",
+    "MaidCheckFallbackMixin",
+    "HugDialogueDaughterFrameMixin",
+    "DialogueBoxCenteredMixin"
   ],
   "injectors": {
     "defaultRequire": 0

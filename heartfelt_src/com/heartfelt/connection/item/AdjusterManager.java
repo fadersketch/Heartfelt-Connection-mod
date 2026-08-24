@@ -2,6 +2,7 @@ package com.heartfelt.connection.item;
 
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.heartfelt.connection.compat.CallResponseCompat;
+import com.heartfelt.connection.compat.CompatMatrix;
 import com.heartfelt.connection.compat.MaidMarriageCompat;
 import com.heartfelt.connection.compat.ReflectUtil;
 import com.heartfelt.connection.debug.HeartfeltDebugApi;
@@ -654,7 +655,7 @@ public final class AdjusterManager {
         CallResponseCompat.addFearFloat(maid, playerId, (float) (target - emotion[1]));
     }
 
-    /** 调试信息:显示 HeartfeltDebugApi.maidDebug 全量状态行 */
+    /** 调试信息:显示 HeartfeltDebugApi.maidDebug 全量状态行 + 兼容矩阵摘要(v1.0.2) */
     private static void showDebug(ServerPlayer player, EntityMaid maid) {
         String[] lines = HeartfeltDebugApi.maidDebug(maid);
         if (lines == null || lines.length == 0) {
@@ -662,6 +663,10 @@ public final class AdjusterManager {
         }
         for (String line : lines) {
             player.m_213846_(Component.m_237113_("\u00a78" + line));
+        }
+        // v1.0.2:追加兼容矩阵摘要——前置模组更新后哪些联动功能降级,一目了然
+        for (String line : CompatMatrix.summaryLines()) {
+            player.m_213846_(Component.m_237113_("\u00a76" + line));
         }
     }
 

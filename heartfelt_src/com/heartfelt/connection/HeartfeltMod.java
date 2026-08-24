@@ -1,6 +1,7 @@
 package com.heartfelt.connection;
 
 import com.heartfelt.connection.client.ClientInit;
+import com.heartfelt.connection.compat.CompatMatrix;
 import com.heartfelt.connection.config.HeartfeltConfig;
 import com.heartfelt.connection.item.HeartfeltItems;
 import com.heartfelt.connection.network.HeartfeltNetwork;
@@ -9,6 +10,7 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /**
@@ -29,8 +31,15 @@ public class HeartfeltMod {
         HeartfeltItems.ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
         // v1.2.0:网络通道(告白对话 S2C/C2S)必须在发包前注册
         HeartfeltNetwork.channel();
+        // v1.0.2:启动兼容性探测(绝不抛出)——前置模组更新后日志输出兼容矩阵
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
         // v1.2.0:客户端侧初始化(仅客户端)
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ClientInit::init);
+    }
+
+    /** v1.0.2:兼容矩阵探测,详见 CompatMatrix */
+    private void onCommonSetup(FMLCommonSetupEvent event) {
+        CompatMatrix.probe();
     }
 }
 

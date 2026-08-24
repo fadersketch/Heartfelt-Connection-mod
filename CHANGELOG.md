@@ -1,5 +1,30 @@
 ﻿# 更新日志
 
+## v1.0.2(2026-08-24)架构加固——永不崩、坏哪看得见(适配爱憎分明 2.0.6)
+
+### 背景
+
+爱憎分明(callresponse)更新到 2.0.6。此前本模组 24 个 mixin 扎在
+爱憎分明/TLM/心契誓约的内部类与方法上,且大多位于 required 配置
+(required=true + defaultRequire=1)——前置模组一改名,注入失败即崩游戏。
+
+### 改动
+
+- **配置重排**:required 配置仅保留 3 个原版目标 mixin
+  (SpecialMilkBucketMixin→MilkBucketItem、ScreenWidgetAccessor→Screen、
+  MaidAttackCooldownMixin→Minecraft,1.20.1 冻结不会变);其余 21 个
+  (爱憎分明×7/车万女仆×9/心契誓约×5)全部移入 optional 配置
+  (required=false + defaultRequire=0)——前置模组更新后注入失败只警告、
+  功能静默降级,**游戏永远能进**;
+- **兼容性探测 CompatMatrix**:加载期反射逐项检查 23 个功能依赖点
+  (类存在 + 关键方法任一存在),日志输出兼容矩阵(带 callresponse/
+  maidmarriage/touhou_little_maid 版本号),调整器「调试信息」追加摘要
+  (黄色行,仅列缺失项);
+- **适配声明**:本版本适配爱憎分明 2.0.6(向下兼容 2.0.4),已经 javap 对照 2.0.6
+  逐类核对了全部注入点;唯一改名点 `EmotionDotingManager.attackNearbyMaids` →
+  `driveNearbyMaids`(签名不变),注入目标改为双名字数组同时兼容两个版本;
+  若后续版本再有内部改名导致个别功能降级,日志兼容矩阵会明确列出,等待后续小版本补齐。
+
 ## v1.0.1(2026-08-24)热修——纯净模组环境启动崩溃
 
 - 问题:1.0.0 的 Mixin 使用 MixinExtras(`@WrapMethod`/`@WrapOperation`)但未把该库打进 jar,
