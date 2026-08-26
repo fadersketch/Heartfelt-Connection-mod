@@ -193,8 +193,10 @@ public final class HeartfeltConfig {
                 .defineInRange("approachMinTicks", 50, 20, 200);
         // v1.5.8:Alt+J 对话安全区
         DIALOGUE_SAFE_RADIUS = builder
-                .comment("Alt+J 对话面板安全区半径(格):玩家与女仆半径内无敌对生物才能打开对话")
-                .defineInRange("dialogueSafeRadius", 32, 8, 128);
+                .comment("Alt+J 对话面板安全区半径(格;默认 32→8——旧值过大,夜间/地底洞穴的敌对生物" +
+                        "几乎总在圈内导致对话打不开,玩家反馈不知道改 TOML 会以为模组坏了):" +
+                        "玩家与女仆半径内无敌对生物才能打开对话")
+                .defineInRange("dialogueSafeRadius", 8, 8, 128);
         builder.pop();
 
         builder.push("emotionSmooth");
